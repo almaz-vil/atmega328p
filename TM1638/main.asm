@@ -24,6 +24,7 @@
 		ret
 
 	send_data:
+				push COUNT
 				push r16
 				ldi r16,0x04        ;команда
 				rcall send_command
@@ -38,8 +39,8 @@
 				rcall t_send
 			    sbi PORTB,PORTB2	;подача 5V - высокий уровень на STB
 				pop r17
-				
 				pop r16
+				pop COUNT
 				ret
     t_send:
 			push r16
@@ -95,7 +96,7 @@
 				ldi DATA,0x00
 				rcall send_data
 				inc		COUNT
-				cpi		COUNT,0xC0+16
+				cpi		COUNT,0xD6
 				brne	clear_loop
 				pop		COUNT
 				ret
@@ -131,7 +132,7 @@
 		
 	;	cbi PORTB,PORTB2	;подача 0V - низкий уровень на STB
 		
-		;rcall clear_display
+		rcall clear_display
 		ldi ADRESS,0xC0
 		ldi DATA,0b0110001
 		rcall send_data
