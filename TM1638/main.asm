@@ -3,6 +3,7 @@
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
 .include "m328pdef.inc"
+.include "macro.inc"
 	.equ XTAL=16000000 
 	.equ fck=XTAL/1000
 	.equ c1us= (1*fck)/4000 - 1
@@ -10,10 +11,14 @@
 	.def ADRESS = r22;
 	.def DATA = r23
 	.def COUNT = r24;
+
+	
 	;Reset Vector
 	.org 0x0000
 		rjmp main
-	
+
+	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
+
 	Delay1us:
 		ldi R25,HIGH(c1us)
 		ldi R24,LOW(c1us)
@@ -129,18 +134,14 @@
 		ldi r16,0x8F ;побитовое ИЛИ
 	;	ori r16,0x20 ; яркость 2
 		rcall send_command ;вторая команда
+		rcall clear_display;очистка экрана и светодиодов
+		ldi r16,2
+		ldi r30, low(led)
+    	ldi r31, high(led)
+		lpm DATA, Z+4
+    ldi ADRESS,0xC0
+	
+	rcall send_data
 		
-	;	cbi PORTB,PORTB2	;подача 0V - низкий уровень на STB
-		
-		rcall clear_display
-		ldi ADRESS,0xC0
-		ldi DATA,0b0110001
-		rcall send_data
-		ldi ADRESS,0xC1
-		ldi DATA,0x00
-		rcall send_data
-		ldi ADRESS,0xC2
-		ldi DATA,0b0000111
-		rcall send_data
 	start: 
 		rjmp start
