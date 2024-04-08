@@ -8,17 +8,17 @@
 	.equ fck=XTAL/1000
 	.equ c1us= (1*fck)/4000 - 1
 
-	.def ADRESS = r22;
+	.def ADRESS = r22
 	.def DATA = r23
-	.def COUNT = r24;
+	.def COUNT = r24
+	.def COUNT_SEG = r21
 
-	
 	;Reset Vector
 	.org 0x0000
 		rjmp main
-
-	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
-
+	.cseg
+	.org 0x0100
+	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F,0x00
 	Delay1us:
 		ldi R25,HIGH(c1us)
 		ldi R24,LOW(c1us)
@@ -106,7 +106,7 @@
 				pop		COUNT
 				ret
 	;Main Program Start
-	.org 0x100
+	.org 0x200
 	main:
 		ldi r16,0            ;reset system status
 		out SREG,r16         ;init stack pointer статусные регистр
@@ -135,13 +135,26 @@
 	;	ori r16,0x20 ; яркость 2
 		rcall send_command ;вторая команда
 		rcall clear_display;очистка экрана и светодиодов
-		ldi r16,2
-		ldi r30, low(led)
-    	ldi r31, high(led)
-		lpm DATA, Z+4
-    ldi ADRESS,0xC0
-	
-	rcall send_data
 		
 	start: 
-		rjmp start
+		;реалиция секундамера
+		ldi		COUNT,0xC0
+		ldi		r16,0x2
+		ldi		r17,0x00
+		loop_adress_seg:
+			;начало на массив цифр
+			ldi ZH, High(led<<1)
+    		ldi ZL, Low(led<<1)
+			mov ADRESS,COUNT ;адрес сегмента
+			loop_seg_data:
+				ldi		DATA,0x00
+				rcall	send_data
+				lpm		DATA, Z+
+				rcall	send_data
+				cpi		DATA,0x00
+			brne	loop_seg_data
+		add		COUNT,r16
+		cpi		COUNT,0xD6
+		brne	loop_adress_seg
+	rcall clear_display;очистка экрана и светодиодов
+	rjmp start
