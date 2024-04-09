@@ -27,6 +27,28 @@
 		sbiw R24,1
 		brne Delayloop
 		ret
+	Delay1sec:
+		push r21
+		push r22
+		push r23
+		ldi	r21,100
+		loop3:	ldi r22,100
+		loop2:	ldi r23,100
+		loop1:	nop
+				nop
+				nop
+				nop
+				nop
+				dec	r23
+				brne loop1
+				dec	r22
+				brne loop2
+				dec r21
+				brne loop3
+		pop r23
+		pop r22
+		pop r21
+		ret
 
 	send_data:
 				push COUNT
@@ -151,6 +173,7 @@
 				rcall	send_data
 				lpm		DATA, Z+
 				rcall	send_data
+				rcall	Delay1sec
 				cpi		DATA,0x00
 			brne	loop_seg_data
 		add		COUNT,r16
