@@ -12,13 +12,88 @@
 	.def DATA = r23
 	.def COUNT = r24
 	.def COUNT_SEG = r21
-
+	.def temp = r17
+	.def esek = r18
+	.def dsek = r19
+	.def emin = r20
+	.def dmin = r25
 	;Reset Vector
 	.org 0x0000
 		rjmp main
+	;Timer 2
+	.org 0x0012
+		rjmp Timer2
 	.cseg
 	.org 0x0100
 	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F,0x00
+	Timer2:
+		inc esek
+		cpi esek,9
+		brne tend
+		ldi esek,0
+		inc dsek
+		cpi dsek,6
+		brne tend
+		ldi dsek,0
+		inc emin
+		cpi emin,9
+		brne tend
+		ldi emin,0
+		inc dmin
+		cpi dmin,6
+		brne tend
+		ldi dmin,0
+		tend:
+		ldi	ADRESS,0xC0 ;esek ardres
+		ldi		DATA,0x00
+		rcall	send_data	
+		ldi ZH, High(led<<1)
+    	ldi ZL, Low(led<<1)
+		ldi temp,-1
+		loop_seg_data_esek:
+				lpm		DATA, Z+
+				inc 	temp
+				cp		temp,esek
+				brne loop_seg_data_esek
+		rcall	send_data
+		ldi	ADRESS,0xC2 ;dsek ardres
+		ldi		DATA,0x00
+		rcall	send_data	
+		ldi ZH, High(led<<1)
+    	ldi ZL, Low(led<<1)
+		ldi temp,-1
+		loop_seg_data_dsek:
+				lpm		DATA, Z+
+				inc 	temp
+				cp		temp,dsek
+				brne loop_seg_data_dsek
+		rcall	send_data
+		ldi	ADRESS,0xC4 ;emin ardres
+		ldi		DATA,0x00
+		rcall	send_data	
+		ldi ZH, High(led<<1)
+    	ldi ZL, Low(led<<1)
+		ldi temp,-1
+		loop_seg_data_emin:
+				lpm		DATA, Z+
+				inc 	temp
+				cp		temp,emin
+				brne loop_seg_data_emin
+		rcall	send_data
+		ldi	ADRESS,0xC6 ;esek ardres
+		ldi		DATA,0x00
+		rcall	send_data	
+		ldi ZH, High(led<<1)
+    	ldi ZL, Low(led<<1)
+		ldi temp,-1
+		loop_seg_data_dmin:
+				lpm		DATA, Z+
+				inc 	temp
+				cp		temp,dmin
+				brne loop_seg_data_dmin
+		rcall	send_data
+		
+		reti
 	Delay1us:
 		ldi R25,HIGH(c1us)
 		ldi R24,LOW(c1us)
@@ -157,27 +232,40 @@
 	;	ori r16,0x20 ; яркость 2
 		rcall send_command ;вторая команда
 		rcall clear_display;очистка экрана и светодиодов
-		
+		;счётчик реального времяни //T2
+		 ;TCCR2A = 0x00; //обычный режим работы таймера
+		 ;TCCR2B = 0x05; //предделитель на 128
+		 ;TIMSK2 = 0x01; //прерывание по переполнению
+		 ;ASSR = 0x20; //использование внешнего кварцевого резонатора 32кГц
+		 ldi r16,0x00
+		 sts TCCR2A,r16
+		 ldi r16,0x05
+		 sts TCCR2B,r16
+		 ldi r16,0x01
+		 sts TIMSK2,r16
+		 ldi r16,0x20
+		 sts ASSR,r16
+
 	start: 
-		;реалиция секундамера
-		ldi		COUNT,0xC0
-		ldi		r16,0x2
-		ldi		r17,0x00
-		loop_adress_seg:
-			;начало на массив цифр
-			ldi ZH, High(led<<1)
-    		ldi ZL, Low(led<<1)
-			mov ADRESS,COUNT ;адрес сегмента
-			loop_seg_data:
-				ldi		DATA,0x00
-				rcall	send_data
-				lpm		DATA, Z+
-				rcall	send_data
-				rcall	Delay1sec
-				cpi		DATA,0x00
-			brne	loop_seg_data
-		add		COUNT,r16
-		cpi		COUNT,0xD6
-		brne	loop_adress_seg
-	rcall clear_display;очистка экрана и светодиодов
+	;	;реалиция секундамера
+	;	ldi		COUNT,0xC0
+	;	ldi		r16,0x2
+	;	ldi		r17,0x00
+	;	loop_adress_seg:
+	;		;начало на массив цифр
+	;		ldi ZH, High(led<<1)
+    ;		ldi ZL, Low(led<<1)
+	;		mov ADRESS,COUNT ;адрес сегмента
+	;		loop_seg_data:
+	;			ldi		DATA,0x00
+	;			rcall	send_data
+	;			lpm		DATA, Z+
+	;			rcall	send_data
+	;			rcall	Delay1sec
+	;			cpi		DATA,0x00
+	;		brne	loop_seg_data
+	;	add		COUNT,r16
+	;	cpi		COUNT,0xD6
+	;	brne	loop_adress_seg
+	;rcall clear_display;очистка экрана и светодиодов
 	rjmp start
