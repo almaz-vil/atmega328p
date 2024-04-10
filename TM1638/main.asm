@@ -1,4 +1,4 @@
-;for TM1638
+﻿;for TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -17,6 +17,7 @@
 	.def dsek = r19
 	.def emin = r20
 	.def dmin = r25
+	.def DATA_T = r16
 	;Reset Vector
 	.org 0x0000
 		rjmp main
@@ -25,7 +26,7 @@
 		rjmp Timer2
 	.cseg
 	.org 0x0100
-	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F,0x00
+	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
 	Timer2:
 		cli
 		inc esek
@@ -52,49 +53,48 @@
     	ldi ZL, Low(led<<1)
 		ldi temp,-1
 		loop_seg_data_esek:
-				lpm		DATA, Z+
+				lpm		DATA_T, Z+
 				inc 	temp
-				cp		temp,esek
+				cp		temp, esek
+				brne	seg_esek_ne
+				ldi		ADRESS,0xC0 ;esek ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_esek_ne:
+				cp		temp, dsek
+				brne	seg_dsek_ne
+				ldi		ADRESS,0xC2 ;dsek ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_dsek_ne:
+				cp		temp, emin
+				brne	seg_emin_ne
+				ldi		ADRESS,0xC4 ;emin ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_emin_ne:
+				cp		temp, dmin
+				brne	seg_dmin_ne
+				ldi		ADRESS,0xC6 ;dmin ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_dmin_ne:						
+				cpi		temp,0xA
 				brne loop_seg_data_esek
-		rcall	send_data
-		ldi	ADRESS,0xC2 ;dsek ardres
-		ldi		DATA,0x00
-		rcall	send_data	
-		ldi ZH, High(led<<1)
-    	ldi ZL, Low(led<<1)
-		ldi temp,-1
-		loop_seg_data_dsek:
-				lpm		DATA, Z+
-				inc 	temp
-				cp		temp,dsek
-				brne loop_seg_data_dsek
-		rcall	send_data
-		ldi	ADRESS,0xC4 ;emin ardres
-		ldi		DATA,0x00
-		rcall	send_data	
-		ldi ZH, High(led<<1)
-    	ldi ZL, Low(led<<1)
-		ldi temp,-1
-		loop_seg_data_emin:
-				lpm		DATA, Z+
-				inc 	temp
-				cp		temp,emin
-				brne loop_seg_data_emin
-		rcall	send_data
-		ldi	ADRESS,0xC6 ;esek ardres
-		ldi		DATA,0x00
-		rcall	send_data	
-		ldi ZH, High(led<<1)
-    	ldi ZL, Low(led<<1)
-		ldi temp,-1
-		loop_seg_data_dmin:
-				lpm		DATA, Z+
-				inc 	temp
-				cp		temp,dmin
-				brne loop_seg_data_dmin
-		rcall	send_data
 		sei		
 		reti
+	Despley_esek:
+		ldi COUNT,0xC0
+		rcall send_data
+		ret
 	Delay1us:
 		ldi R25,HIGH(c1us)
 		ldi R24,LOW(c1us)
@@ -246,6 +246,11 @@
 		 sts TIMSK2,r16
 		 ldi r16,0x20
 		 sts ASSR,r16
+		 
+		ldi esek,0x00
+		ldi dsek,0x00
+		ldi emin,0x00
+		ldi dmin,0x00
 		sei
 	start: 
 	;	;реалиция секундамера
