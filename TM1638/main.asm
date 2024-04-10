@@ -1,4 +1,4 @@
-﻿;for TM1638
+;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -16,7 +16,7 @@
 	.def esek = r18
 	.def dsek = r19
 	.def emin = r20
-	.def dmin = r25
+	.def dmin = r26
 	.def DATA_T = r16
 	;Reset Vector
 	.org 0x0000
@@ -30,7 +30,7 @@
 	Timer2:
 		cli
 		inc esek
-		cpi esek,9
+		cpi esek,10
 		brne tend
 		ldi esek,0
 		inc dsek
@@ -38,7 +38,7 @@
 		brne tend
 		ldi dsek,0
 		inc emin
-		cpi emin,9
+		cpi emin,10
 		brne tend
 		ldi emin,0
 		inc dmin
@@ -46,6 +46,8 @@
 		brne tend
 		ldi dmin,0
 		tend:
+		rcall Delay1sec
+		;rcall Delay1sec
 		ldi	ADRESS,0xC0 ;esek ardres
 		ldi		DATA,0x00
 		rcall	send_data	
@@ -57,7 +59,7 @@
 				inc 	temp
 				cp		temp, esek
 				brne	seg_esek_ne
-				ldi		ADRESS,0xC0 ;esek ardres
+				ldi		ADRESS,0xCE ;esek ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
@@ -65,7 +67,7 @@
 				seg_esek_ne:
 				cp		temp, dsek
 				brne	seg_dsek_ne
-				ldi		ADRESS,0xC2 ;dsek ardres
+				ldi		ADRESS,0xCC ;dsek ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
@@ -73,7 +75,7 @@
 				seg_dsek_ne:
 				cp		temp, emin
 				brne	seg_emin_ne
-				ldi		ADRESS,0xC4 ;emin ardres
+				ldi		ADRESS,0xC2 ;emin ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
@@ -81,7 +83,7 @@
 				seg_emin_ne:
 				cp		temp, dmin
 				brne	seg_dmin_ne
-				ldi		ADRESS,0xC6 ;dmin ardres
+				ldi		ADRESS,0xC0 ;dmin ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
@@ -230,7 +232,7 @@
 		rcall send_command
 		; яркость дисплея от 0x88 до 0x8F
 		ldi r16,0x8F ;побитовое ИЛИ
-	;	ori r16,0x20 ; яркость 2
+		ori r16,0x20 ; яркость 2
 		rcall send_command ;вторая команда
 		rcall clear_display;очистка экрана и светодиодов
 		;счётчик реального времяни //T2
