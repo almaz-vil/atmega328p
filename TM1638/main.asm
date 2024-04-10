@@ -1,4 +1,4 @@
-;fot TM1638
+﻿;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -242,12 +242,16 @@
 		 ;ASSR = 0x20; //использование внешнего кварцевого резонатора 32кГц
 		 ldi r16,0x00
 		 sts TCCR2A,r16
-		 ldi r16,0x05
+		 ldi r16,0xE
 		 sts TCCR2B,r16
-		 ldi r16,0x01
+		 ldi r16,0x02
 		 sts TIMSK2,r16
-		 ldi r16,0x20
+		 ldi r16,127
+		 sts OCR2A,r16
+		 ldi r16,0x60
 		 sts ASSR,r16
+		 ldi r16,0x00
+		 sts TIFR2,r16
 		 
 		ldi esek,0x00
 		ldi dsek,0x00
