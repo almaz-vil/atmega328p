@@ -27,6 +27,7 @@
 	.org 0x0100
 	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F,0x00
 	Timer2:
+		cli
 		inc esek
 		cpi esek,9
 		brne tend
@@ -92,7 +93,7 @@
 				cp		temp,dmin
 				brne loop_seg_data_dmin
 		rcall	send_data
-		
+		sei		
 		reti
 	Delay1us:
 		ldi R25,HIGH(c1us)
@@ -245,7 +246,7 @@
 		 sts TIMSK2,r16
 		 ldi r16,0x20
 		 sts ASSR,r16
-
+		sei
 	start: 
 	;	;реалиция секундамера
 	;	ldi		COUNT,0xC0
