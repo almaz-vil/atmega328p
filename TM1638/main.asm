@@ -22,7 +22,7 @@
 	.org 0x0000
 		rjmp main
 	;Timer 2
-	.org 0x0012
+	.org 0x001A
 		rjmp Timer2
 	.cseg
 	.org 0x0100
@@ -46,7 +46,7 @@
 		brne tend
 		ldi dmin,0
 		tend:
-		rcall Delay1sec
+		;rcall Delay1sec
 		;rcall Delay1sec
 		ldi	ADRESS,0xC0 ;esek ardres
 		ldi		DATA,0x00
@@ -241,17 +241,17 @@
 		 ;TIMSK2 = 0x01; //прерывание по переполнению
 		 ;ASSR = 0x20; //использование внешнего кварцевого резонатора 32кГц
 		 ldi r16,0x00
-		 sts TCCR2A,r16
-		 ldi r16,0xE
-		 sts TCCR2B,r16
+		 sts TCCR1A,r16
+		 ldi r16,0b00001100;0xE
+		 sts TCCR1B,r16
 		 ldi r16,0x02
-		 sts TIMSK2,r16
-		 ldi r16,127
-		 sts OCR2A,r16
-		 ldi r16,0x60
-		 sts ASSR,r16
+		 sts TIMSK1,r16
+		 ldi r16,High(62500)
+		 sts OCR1AH,r16
+		 ldi r16,Low(62500)
+		 sts OCR1AL,r16
 		 ldi r16,0x00
-		 sts TIFR2,r16
+		 sts TIFR1,r16
 		 
 		ldi esek,0x00
 		ldi dsek,0x00
