@@ -1,4 +1,4 @@
-﻿;fot TM1638
+;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -17,17 +17,19 @@
 	.def dsek = r19
 	.def emin = r20
 	.def dmin = r26
+	.def ehas = r27
+	.def dhas = r28
 	.def DATA_T = r16
 	;Reset Vector
 	.org 0x0000
 		rjmp main
-	;Timer 2
+	;Timer 1
 	.org 0x001A
-		rjmp Timer2
+		rjmp Timer1
 	.cseg
 	.org 0x0100
 	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
-	Timer2:
+	Timer1:
 		cli
 		inc esek
 		cpi esek,10
@@ -45,12 +47,18 @@
 		cpi dmin,6
 		brne tend
 		ldi dmin,0
+		inc ehas
+		cpi ehas,10
+		brne tend
+		ldi ehas,0
+		inc dhas
+		cpi dhas,2
+		brne tend
+		cpi ehas,4
+		brne tend
+		ldi ehas,0
+		ldi dhas,0
 		tend:
-		;rcall Delay1sec
-		;rcall Delay1sec
-		ldi	ADRESS,0xC0 ;esek ardres
-		ldi		DATA,0x00
-		rcall	send_data	
 		ldi ZH, High(led<<1)
     	ldi ZL, Low(led<<1)
 		ldi temp,-1
@@ -75,7 +83,7 @@
 				seg_dsek_ne:
 				cp		temp, emin
 				brne	seg_emin_ne
-				ldi		ADRESS,0xC2 ;emin ardres
+				ldi		ADRESS,0xC8 ;emin ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
@@ -83,12 +91,28 @@
 				seg_emin_ne:
 				cp		temp, dmin
 				brne	seg_dmin_ne
+				ldi		ADRESS,0xC6 ;dmin ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_dmin_ne:
+				cp		temp, ehas
+				brne	seg_ehas_ne
+				ldi		ADRESS,0xC2 ;dmin ardres
+				ldi		DATA,0x00
+				rcall	send_data	
+				mov		DATA,DATA_T
+				rcall	send_data
+				seg_ehas_ne:
+				cp		temp, dhas
+				brne	seg_dhas_ne
 				ldi		ADRESS,0xC0 ;dmin ardres
 				ldi		DATA,0x00
 				rcall	send_data	
 				mov		DATA,DATA_T
 				rcall	send_data
-				seg_dmin_ne:						
+				seg_dhas_ne:
 				cpi		temp,0xA
 				brne loop_seg_data_esek
 		sei		
@@ -255,8 +279,10 @@
 		 
 		ldi esek,0x00
 		ldi dsek,0x00
-		ldi emin,0x00
-		ldi dmin,0x00
+		ldi emin,9
+		ldi dmin,3
+		ldi ehas,0
+		ldi dhas,2
 		sei
 	start: 
 	;	;реалиция секундамера
