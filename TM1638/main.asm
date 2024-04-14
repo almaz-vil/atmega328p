@@ -1,4 +1,4 @@
-;fot TM1638
+﻿;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -48,16 +48,11 @@
 		brne tend
 		ldi dmin,0
 		inc ehas
+		rcall CPM_LCS
 		cpi ehas,10
 		brne tend
 		ldi ehas,0
 		inc dhas
-		cpi dhas,2
-		brne tend
-		cpi ehas,4
-		brne tend
-		ldi ehas,0
-		ldi dhas,0
 		tend:
 		ldi ZH, High(led<<1)
     	ldi ZL, Low(led<<1)
@@ -117,6 +112,14 @@
 				brne loop_seg_data_esek
 		sei		
 		reti
+	CPM_LCS:;если 24 часа то 00
+		cpi dhas,2
+		brne tend
+		cpi ehas,4
+		brne tend
+		ldi ehas,0
+		ldi dhas,0
+		ret
 	Despley_esek:
 		ldi COUNT,0xC0
 		rcall send_data
@@ -270,7 +273,7 @@
 		 sts TCCR1B,r16
 		 ldi r16,0x02
 		 sts TIMSK1,r16
-		 ldi r16,High(62500)
+		 ldi r16,High(62500);62500
 		 sts OCR1AH,r16
 		 ldi r16,Low(62500)
 		 sts OCR1AL,r16
