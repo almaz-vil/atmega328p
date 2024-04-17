@@ -1,4 +1,4 @@
-;fot TM1638
+﻿;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
@@ -45,12 +45,12 @@
 		
 		push DATA_T
 		cli
-		;rcall poll_keypad
-		;mov	temp,BUTTONS
-		;cpi	temp,BUTTON1
-		;brne	q_r
-		;ldi	esek,0
-		;ldi dsek,0 
+		rcall poll_keypad
+		mov	temp,BUTTONS
+		cpi	temp,BUTTON1
+		brne	q_r
+		ldi	esek,0
+		ldi dsek,0 
 		q_r:
 		inc esek
 		cpi esek,10
@@ -255,9 +255,9 @@
 				pop		COUNT
 				ret
 	poll_keypad:	;состояние кнопок
-				push	COUNT
-				push	DATA_T ;AKKU2
-				push	DATA	;AKKU
+				push	dsek
+				push	esek ;AKKU2
+				push	emin	;AKKU
 				push	r16		;AKKU3
 				cbi		PORTB, PORTB2	;подача 0V - низкий уровень на STB
 				ldi		r16,0x42
@@ -267,42 +267,42 @@
 				ldi		r16,(1<<PB2)|(1<<PB0)|(0<<PB1)
 				out		DDRB,r16
 				sbi		PORTB,PORTB1
-				clr		DATA	;AKKU
+				clr		emin	;AKKU
 				ldi		r16,4	;AKKU3
 			_A1:
-				clr		DATA_T	;AKKU2
-				ldi		COUNT,8
+				clr		esek	;AKKU2
+				ldi		dsek,8
 			_A4:
 				cbi		PORTB,PORTB0
 				rcall	Delay1us
 				sbis	PINB,PB1
 				rjmp	_A7
 			_A8:
-				sbr		DATA_T,0b10000000
+				sbr		esek,0b10000000
 			_A9:
 			_A7:
-				cpi		COUNT,1
+				cpi		dsek,1
 				breq	_A11
-				lsr		DATA_T	;AKKU2
+				lsr		esek	;AKKU2
 			_A13:
 			_A11:
 				sbi		PORTB,PORTB0
 				rcall	Delay1us
-				dec		COUNT
+				dec		dsek
 				brne	_A4
 				
-				andi	DATA_T,0b00010001
-				mov		COUNT,r16
-				dec		COUNT
+				andi	esek,0b00010001
+				mov		dsek,r16
+				dec		dsek
 			_A14:
-				cpi		COUNT,0
+				cpi		dsek,0
 				brlo	_A16
 				breq	_A16
-				lsl		DATA_T
-				dec		COUNT
+				lsl		esek
+				dec		dsek
 				rjmp	_A14
 			_A16:
-				or		BUTTONS,DATA_T
+				or		BUTTONS,esek
 				dec		r16
 				brne	_A1
 				swap	BUTTONS	
@@ -311,9 +311,9 @@
 				out		DDRB,r16
 				
 				pop		r16
-				pop		DATA
-				pop		DATA_T
-				pop		COUNT
+				pop		emin
+				pop		esek
+				pop		dsek
 				ret
 
 	;Main Program Start
