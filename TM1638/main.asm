@@ -1,13 +1,24 @@
-﻿;fot TM1638
+;fot TM1638
 ; DIO - 9 pin PORTB1 ATMega328P
 ; CLK - 8 pin PORTB0 ATMega328P
 ; STB - 10 pin PORTB2 ATMega328P
 .include "m328pdef.inc"
 .include "macro.inc"
+
+	.EQU	BUTTON1			= 0b10000000
+	.EQU	BUTTON2			= 0b01000000
+	.EQU	BUTTON3			= 0b00100000
+	.EQU	BUTTON4			= 0b00010000
+	.EQU	BUTTON5			= 0b00001000
+	.EQU	BUTTON6			= 0b00000100
+	.EQU	BUTTON7			= 0b00000010
+	.EQU	BUTTON8			= 0b00000001
 	.equ XTAL=16000000 
 	.equ fck=XTAL/1000
 	.equ c1us= (1*fck)/4000 - 1
 
+
+	.def BUTTONS = r1
 	.def ADRESS = r22
 	.def DATA = r23
 	.def COUNT = r24
@@ -20,6 +31,7 @@
 	.def ehas = r27
 	.def dhas = r28
 	.def DATA_T = r16
+	
 	;Reset Vector
 	.org 0x0000
 		rjmp main
@@ -30,7 +42,16 @@
 	.org 0x0100
 	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
 	Timer1:
+		
+		push DATA_T
 		cli
+		;rcall poll_keypad
+		;mov	temp,BUTTONS
+		;cpi	temp,BUTTON1
+		;brne	q_r
+		;ldi	esek,0
+		;ldi dsek,0 
+		q_r:
 		inc esek
 		cpi esek,10
 		brne tend
@@ -110,6 +131,7 @@
 				seg_dhas_ne:
 				cpi		temp,0xA
 				brne loop_seg_data_esek
+		pop DATA_T		
 		sei		
 		reti
 	CPM_LCS:;если 24 часа то 00
@@ -232,6 +254,68 @@
 				brne	clear_loop
 				pop		COUNT
 				ret
+	poll_keypad:	;состояние кнопок
+				push	COUNT
+				push	DATA_T ;AKKU2
+				push	DATA	;AKKU
+				push	r16
+				cbi		PORTB, PORTB2	;подача 0V - низкий уровень на STB
+				ldi		r16,0x42
+				rcall	send_command
+				rcall	Delay1us
+				rcall	Delay1us
+				ldi		r16,(1<<PB2)|(1<<PB0)|(0<<PB1)
+				out		DDRB,r16
+				sbi		PORTB,PORTB1
+				clr		r16
+				ldi		DATA,4
+			_A1:
+				clr		DATA_T
+				ldi		COUNT,8
+			_A4:
+				cbi		PORTB,PORTB0
+				rcall	Delay1us
+				sbis	PINB,PB1
+				rjmp	_A7
+			_A8:
+				sbr		DATA_T,0b10000000
+			_A9:
+			_A7:
+				cpi		COUNT,1
+				breq	_A11
+				lsr		DATA_T	;AKKU2
+			_A13:
+			_A11:
+				sbi		PORTB,PORTB0
+				rcall	Delay1us
+				dec		COUNT
+				brne	_A4
+				
+				andi	DATA_T,0b00010001
+				mov		COUNT,r16
+				dec		COUNT
+			_A14:
+				cpi		COUNT,0
+				brlo	_A16
+				breq	_A16
+				lsl		DATA_T
+				dec		COUNT
+				rjmp	_A14
+			_A16:
+				or		BUTTONS,DATA_T
+				dec		r16
+				brne	_A1
+				swap	BUTTONS	
+				sbi		PORTB, PORTB2	;подача 5V -STB
+				ldi		r16,(1<<PB2)|(1<<PB0)|(1<<PB1)
+				out		DDRB,r16
+				
+				pop		r16
+				pop		DATA
+				pop		DATA_T
+				pop		COUNT
+				ret
+
 	;Main Program Start
 	.org 0x200
 	main:
@@ -283,30 +367,10 @@
 		ldi esek,0x00
 		ldi dsek,0x00
 		ldi emin,9
-		ldi dmin,3
-		ldi ehas,0
+		ldi dmin,2
+		ldi ehas,1
 		ldi dhas,2
 		sei
 	start: 
-	;	;реалиция секундамера
-	;	ldi		COUNT,0xC0
-	;	ldi		r16,0x2
-	;	ldi		r17,0x00
-	;	loop_adress_seg:
-	;		;начало на массив цифр
-	;		ldi ZH, High(led<<1)
-    ;		ldi ZL, Low(led<<1)
-	;		mov ADRESS,COUNT ;адрес сегмента
-	;		loop_seg_data:
-	;			ldi		DATA,0x00
-	;			rcall	send_data
-	;			lpm		DATA, Z+
-	;			rcall	send_data
-	;			rcall	Delay1sec
-	;			cpi		DATA,0x00
-	;		brne	loop_seg_data
-	;	add		COUNT,r16
-	;	cpi		COUNT,0xD6
-	;	brne	loop_adress_seg
-	;rcall clear_display;очистка экрана и светодиодов
+	
 	rjmp start
