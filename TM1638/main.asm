@@ -258,7 +258,7 @@
 				push	COUNT
 				push	DATA_T ;AKKU2
 				push	DATA	;AKKU
-				push	r16
+				push	r16		;AKKU3
 				cbi		PORTB, PORTB2	;подача 0V - низкий уровень на STB
 				ldi		r16,0x42
 				rcall	send_command
@@ -267,10 +267,10 @@
 				ldi		r16,(1<<PB2)|(1<<PB0)|(0<<PB1)
 				out		DDRB,r16
 				sbi		PORTB,PORTB1
-				clr		r16
-				ldi		DATA,4
+				clr		DATA	;AKKU
+				ldi		r16,4	;AKKU3
 			_A1:
-				clr		DATA_T
+				clr		DATA_T	;AKKU2
 				ldi		COUNT,8
 			_A4:
 				cbi		PORTB,PORTB0
