@@ -1,7 +1,9 @@
-﻿;fot TM1638
-; DIO - 9 pin PORTB1 ATMega328P
-; CLK - 8 pin PORTB0 ATMega328P
-; STB - 10 pin PORTB2 ATMega328P
+;Дмитрий Поляков
+;18.04.2024 года
+;for TM1638
+;DIO - 9 pin PORTB1 ATMega328P
+;CLK - 8 pin PORTB0 ATMega328P
+;STB - 10 pin PORTB2 ATMega328P
 .include "m328pdef.inc"
 .include "macro.inc"
 
@@ -16,9 +18,11 @@
 	.equ XTAL=16000000 
 	.equ fck=XTAL/1000
 	.equ c1us= (1*fck)/4000 - 1
-
-
+	.equ BAUND=9600
+	.equ UBRR_value = (fck/(BAUND*8))-1    
+	.equ	STB=PORTB2
 	.def BUTTONS = r1
+	.def PROPUSK = r2
 	.def ADRESS = r22
 	.def DATA = r23
 	.def COUNT = r24
@@ -43,15 +47,78 @@
 	led: .db 0x3F,0x6,0x5B,0x4F,0x66,0x6D,0x7D,0x7,0x7F,0x6F
 	Timer1:
 		
-		push DATA_T
 		cli
 		rcall poll_keypad
 		mov	temp,BUTTONS
-		cpi	temp,BUTTON1
+		;cpi temp,0
+		;breq q_r_f
+		cpi	temp,BUTTON1 ;кнопка №1 сброс минут 00 и секунд 00
 		brne	q_r
+		clr BUTTONS
 		ldi	esek,0
 		ldi dsek,0 
+		ldi emin,0
+		ldi dmin,0
 		q_r:
+		cpi	temp,BUTTON2	;кнопка №2 плюс 1 час
+		brne	q_r_d
+		clr BUTTONS
+		inc ehas	;еденицы часов
+		cpi ehas,10
+		brne q_r_d
+		ldi ehas,0
+		inc dhas
+		cpi dhas,2
+		brne q_r_d
+		cpi ehas,4
+		brne q_r_d
+		ldi ehas,0
+		ldi dhas,0		
+		q_r_d:
+		cpi	temp,BUTTON3	;кнопка №3 сброс часов в 00
+		brne	q_r_f4
+		clr BUTTONS
+		ldi ehas,0
+		ldi dhas,0
+		q_r_f4:
+		cpi temp,BUTTON4	;кнопка №4 добавлнение минут
+		brne	q_r_f5
+		clr	BUTTONS
+		inc emin
+		cpi emin,10
+		brne q_r_f5
+		ldi emin,0
+		inc dmin
+		cpi dmin,6
+		brne q_r_f5
+		ldi dmin,0
+		ldi emin,0
+		q_r_f5:
+		cpi	temp,BUTTON5	;кнопка №5 сброс сукунд в 00
+		brne	q_r_f6
+		clr BUTTONS
+		ldi esek,0
+		ldi dsek,0	
+		q_r_f6:
+		cpi	temp,BUTTON6	;кнопка №6 показ 18 12 86 на 5 сек
+		brne	q_r_f
+		clr BUTTONS	
+		ldi DATA_T,0x7D
+		DATASEG 0xCE
+		ldi DATA_T,0x7F		
+		DATASEG 0xCC
+		ldi DATA_T,0x5B
+		DATASEG 0xC8
+		ldi DATA_T,0x6
+		DATASEG 0xC6
+		ldi DATA_T,0x7F
+		DATASEG 0xC2
+		ldi DATA_T,0x6		
+		DATASEG 0xC0
+		ldi temp, 0x5
+		mov PROPUSK,temp		
+		q_r_f:
+		clr BUTTONS
 		inc esek
 		cpi esek,10
 		brne tend
@@ -75,6 +142,11 @@
 		ldi ehas,0
 		inc dhas
 		tend:
+		ldi temp,0x00
+		cp PROPUSK,temp
+		brne end_prorusk
+		breq propuskl
+		propuskl:
 		ldi ZH, High(led<<1)
     	ldi ZL, Low(led<<1)
 		ldi temp,-1
@@ -83,56 +155,36 @@
 				inc 	temp
 				cp		temp, esek
 				brne	seg_esek_ne
-				ldi		ADRESS,0xCE ;esek ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xCE
 				seg_esek_ne:
 				cp		temp, dsek
 				brne	seg_dsek_ne
-				ldi		ADRESS,0xCC ;dsek ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xCC
 				seg_dsek_ne:
 				cp		temp, emin
 				brne	seg_emin_ne
-				ldi		ADRESS,0xC8 ;emin ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xC8
 				seg_emin_ne:
 				cp		temp, dmin
 				brne	seg_dmin_ne
-				ldi		ADRESS,0xC6 ;dmin ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xC6
 				seg_dmin_ne:
 				cp		temp, ehas
 				brne	seg_ehas_ne
-				ldi		ADRESS,0xC2 ;dmin ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xC2
 				seg_ehas_ne:
 				cp		temp, dhas
 				brne	seg_dhas_ne
-				ldi		ADRESS,0xC0 ;dmin ardres
-				ldi		DATA,0x00
-				rcall	send_data	
-				mov		DATA,DATA_T
-				rcall	send_data
+				DATASEG 0xC0
 				seg_dhas_ne:
 				cpi		temp,0xA
 				brne loop_seg_data_esek
-		pop DATA_T		
+				
 		sei		
+		reti
+		end_prorusk:
+		dec PROPUSK
+		sei
 		reti
 	CPM_LCS:;если 24 часа то 00
 		cpi dhas,2
@@ -180,23 +232,20 @@
 	send_data:
 				push COUNT
 				push r16
-				ldi r16,0x04        ;команда
-				rcall send_command
-				rcall Delay1us
-		
 				push r17
-                cbi PORTB,PORTB2	;подача 0V - низкий уровень на STB
+		        cbi PORTB,STB	;подача 0V - низкий уровень на STB
 				ori ADRESS,0xC0
             	mov r16,ADRESS
 			    rcall t_send
 				mov r16,DATA
 				rcall t_send
-			    sbi PORTB,PORTB2	;подача 5V - высокий уровень на STB
+			    sbi PORTB,STB	;подача 5V - высокий уровень на STB
 				pop r17
 				pop r16
 				pop COUNT
 				ret
-    t_send:
+
+	t_send:
 			push r16
 			push r17
 			push r18
@@ -236,11 +285,11 @@
 
     send_command:           ;отправка комманд
 				push r17
-                cbi PORTB, PORTB2	;подача 0V - низкий уровень на STB
+                cbi PORTB,STB	;подача 0V - низкий уровень на STB
                 rcall t_send
-				sbi PORTB, PORTB2    ;подача 5V - высокий уровень на STB
-				pop r17
+				sbi PORTB,STB    ;подача 5V - высокий уровень на STB
 				rcall Delay1us
+				pop r17
                 ret    
 	clear_display:
 				push 	COUNT
@@ -259,9 +308,9 @@
 				push	esek ;AKKU2
 				push	emin	;AKKU
 				push	r16		;AKKU3
-				cbi		PORTB, PORTB2	;подача 0V - низкий уровень на STB
+				cbi		PORTB, STB	;подача 0V - низкий уровень на STB
 				ldi		r16,0x42
-				rcall	send_command
+				rcall	t_send
 				rcall	Delay1us
 				rcall	Delay1us
 				ldi		r16,(1<<PB2)|(1<<PB0)|(0<<PB1)
@@ -306,7 +355,7 @@
 				dec		r16
 				brne	_A1
 				swap	BUTTONS	
-				sbi		PORTB, PORTB2	;подача 5V -STB
+				sbi		PORTB, STB	;подача 5V -STB
 				ldi		r16,(1<<PB2)|(1<<PB0)|(1<<PB1)
 				out		DDRB,r16
 				
@@ -317,7 +366,7 @@
 				ret
 
 	;Main Program Start
-	.org 0x200
+	.org 0x300
 	main:
 		ldi r16,0            ;reset system status
 		out SREG,r16         ;init stack pointer статусные регистр
@@ -342,8 +391,7 @@
 		ldi r16,0x44        ;первая команда инициализация
 		rcall send_command
 		; яркость дисплея от 0x88 до 0x8F
-		ldi r16,0x8F ;побитовое ИЛИ
-		ori r16,0x20 ; яркость 2
+		ldi r16,0x88 ;побитовое ИЛИ
 		rcall send_command ;вторая команда
 		rcall clear_display;очистка экрана и светодиодов
 		;счётчик реального времяни //T2
@@ -357,19 +405,21 @@
 		 sts TCCR1B,r16
 		 ldi r16,0x02
 		 sts TIMSK1,r16
-		 ldi r16,High(62500);62500
+		 ;62500 быстрее чем 1 секунда
+		 ldi r16,High(62480);62500
 		 sts OCR1AH,r16
-		 ldi r16,Low(62500)
+		 ldi r16,Low(62480)
 		 sts OCR1AL,r16
 		 ldi r16,0x00
 		 sts TIFR1,r16
 		 
 		ldi esek,0x00
 		ldi dsek,0x00
-		ldi emin,9
-		ldi dmin,2
-		ldi ehas,1
-		ldi dhas,2
+		ldi emin,0
+		ldi dmin,0
+		ldi ehas,0
+		ldi dhas,0
+		clr PROPUSK
 		sei
 	start: 
 	
